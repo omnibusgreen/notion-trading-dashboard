@@ -1,15 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { margin: 0; padding: 0; background-color: transparent; }
-        .tradingview-widget-container { height: 100vh; width: 100%; }
+        body { margin: 0; background-color: #131722; }
+        .widget-container { height: 100vh; display: flex; flex-direction: column; gap: 10px; padding: 10px; }
     </style>
 </head>
 <body>
-    <div class="tradingview-widget-container">
-        <script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"></script>
-        <tv-ticker-tape symbols="FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD"></tv-ticker-tape>
+    <div class="widget-container">
+        <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+            {
+            "symbols": [
+                {"proName": "FX_IDC:USDKRW", "title": "원/달러"},
+                {"proName": "CME_MINI:ES1!", "title": "S&P 500"},
+                {"proName": "CME:NQ1!", "title": "나스닥 100"},
+                {"proName": "COMEX:GC1!", "title": "금"},
+                {"proName": "NYMEX:CL1!", "title": "WTI 유가"}
+            ],
+            "showSymbolLogo": true, "colorTheme": "dark", "isTransparent": false, "displayMode": "adaptive", "locale": "ko"
+            }
+            </script>
+        </div>
+
+        <div class="tradingview-widget-container" style="flex-grow: 1;">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+            {
+            "colorTheme": "dark", "dateRange": "12M", "showChart": false, "locale": "ko", "width": "100%", "height": "100%",
+            "symbolsGroups": [
+                {
+                "name": "반도체 & AI",
+                "symbols": [
+                    {"s": "NASDAQ:NVDA"}, {"s": "NASDAQ:AVGO"}, {"s": "NASDAQ:MU"}, {"s": "NASDAQ:PLTR"}, {"s": "NASDAQ:INTC"}
+                ]
+                },
+                {
+                "name": "에너지 & SMR",
+                "symbols": [
+                    {"s": "NYSE:SMR"}, {"s": "NYSE:OKLO"}, {"s": "NYSE:ETN"}, {"s": "NYMEX:NG1!"}
+                ]
+                },
+                {
+                "name": "관심 종목",
+                "symbols": [
+                    {"s": "NASDAQ:TSLA"}, {"s": "NASDAQ:GOOGL"}, {"s": "NYSE:IONQ"}, {"s": "NASDAQ:RGTI"}
+                ]
+                }
+            ]
+            }
+            </script>
+        </div>
     </div>
 </body>
 </html>
