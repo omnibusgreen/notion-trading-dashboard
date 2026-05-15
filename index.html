@@ -1,22 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
+   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* 배경을 어둡게 하고 여백을 완전히 제거합니다 */
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background-color: #0F0F0F; 
-            overflow: hidden; /* 스크롤바 방지 */
-        }
-        .widget-outer-container { 
-            width: 100vw; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-        }
+        body { margin: 0; background-color: #131722; }
+        .widget-container { height: 100vh; display: flex; flex-direction: column; gap: 10px; padding: 10px; }
     </style>
 </head>
 <body>
@@ -26,6 +15,12 @@
         <div class="tradingview-widget-container__widget"></div>
         <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
         {
+            "colorTheme": "dark",
+            "locale": "en",
+            "largeChartUrl": "",
+            "isTransparent": false,
+            "showSymbolLogo": true,
+            "backgroundColor": "#0F0F0F",
             "width": "100%", /* 가로 길이를 100%로 변경 */
             "height": "100%", /* 세로 길이도 꽉 차게 변경 */
             "symbolsGroups": [
@@ -70,12 +65,6 @@
                     ]
                 }
             ],
-          "colorTheme": "dark",
-          "locale": "en",
-          "largeChartUrl": "",
-          "isTransparent": false,
-          "showSymbolLogo": true,
-          "backgroundColor": "#0F0F0F",
         }
         </script>
     </div>
