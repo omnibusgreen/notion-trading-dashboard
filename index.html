@@ -4,25 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* 1. 최상위 요소인 html과 body의 높이를 100%로 고정합니다. */
+        /* 1. 배경 및 스크롤바 설정 */
         html, body { 
-            height: 100%; 
             margin: 0; 
             padding: 0; 
             background-color: #0F0F0F; 
-            overflow: hidden; 
+            /* 스크롤바가 필요할 때만 나타나도록 설정 (auto) */
+            overflow: auto; 
+            height: 100%;
         }
 
-        /* 2. 위젯을 감싸는 컨테이너가 화면 전체(100%)를 쓰도록 설정합니다. */
-        .tradingview-widget-container { 
-            height: 100%; 
+        /* 2. 위젯의 '필요한 크기'를 여기서 지정합니다. */
+        .widget-container { 
+            /* 가로 길이를 원하는 픽셀(px)로 고정 (예: 800px) */
+            /* 100%로 두면 노션 가로폭에 맞춰지고, px로 두면 고정됩니다. */
             width: 100%; 
+            max-width: 1000px; /* 최대 가로폭 제한 */
+            
+            /* 세로 길이를 고정 (예: 600px) */
+            height: 600px; 
+            
+            margin: 0 auto; /* 중앙 정렬 */
         }
+
+        /* 스크롤바 디자인 (다크모드에 어울리게) */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
 <body>
     <!-- TradingView Widget BEGIN -->
-    <div class="tradingview-widget-container">
+    <div class="widget-container">
       <div class="tradingview-widget-container__widget"></div>
           <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/markets/" rel="noopener nofollow" target="_blank"><span class="blue-text">Market summary</span></a><span class="trademark"> by TradingView</span></div>
           <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
