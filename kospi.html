@@ -2,26 +2,95 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>KOSPI 네이버 5분봉</title>
+  <title>KOSPI 실시간 5분봉</title>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
   <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #0f0f0f; overflow: hidden; }
-    .widget-container { width: 100%; height: 100%; }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      /* 네이버의 흰색 차트를 어두운 대시보드 톤으로 바꿔주는 마법의 다크 필터 */
-      filter: invert(0.9) hue-rotate(180deg);
-      opacity: 0.9;
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background-color: #131722; overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #chart-container { width: 100%; height: 100%; }
+    .loading {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: #d1d4dc; font-size: 14px;
     }
   </style>
 </head>
 <body>
-  <div class="widget-container">
-    <iframe 
-      src="https://fchart.stock.naver.com/sise.nhn?symbol=KOSPI&timeframe=5&count=120&requestType=0" 
-      scrolling="no">
-    </iframe>
-  </div>
+
+  <div id="loading" class="loading">KOSPI 실시간 분봉 차트 로딩 중...</div>
+  <div id="chart-container"></div>
+
+  <script>
+    // 1. 차트 기본 스펙 설정 (트레이딩뷰 다크모드 감성 그대로)
+    const chartContainer = document.getElementById('chart-container');
+    const chart = LightweightCharts.createChart(chartContainer, {
+      width: chartContainer.clientWidth,
+      height: chartContainer.clientHeight,
+      layout: {
+        backgroundColor: '#131722',
+        textColor: '#d1d4dc',
+      },
+      grid: {
+        vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
+        horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
+      },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      timeScale: { timeVisible: true, secondsVisible: false },
+    });
+
+    // 2. 캔들스틱(봉차트) 시리즈 추가 및 국장 컬러(양봉 빨강, 음봉 파랑) 세팅
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#ff3b30',
+      downColor: '#007aff',
+      borderDownColor: '#007aff',
+      borderUpColor: '#ff3b30',
+      wickDownColor: '#007aff',
+      wickUpColor: '#ff3b30',
+    });
+
+    // 3. 야후 파이낸스 공공 API를 통해 차단 없이 KOSPI 데이터 파싱 (5분봉 주기)
+    // ^KS11은 KOSPI의 심볼입니다.
+    const ticker = '^KS11'; 
+    const interval = '5m'; // 5분봉 (1분봉 원하시면 1m으로 변경 가능)
+    const range = '2d';   // 최근 2일치 데이터
+
+    fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}`)
+      .then(res => res.json())
+      .then(json => {
+        const result = json.chart.result[0];
+        const timestamps = result.timestamp;
+        const quote = result.indicators.quote[0];
+        
+        const chartData = [];
+        
+        for (let i = 0; i < timestamps.length; i++) {
+          if (quote.open[i] && quote.high[i] && quote.low[i] && quote.close[i]) {
+            // 타임스탬프를 한국 시간(KST) 초 단위로 변환
+            chartData.push({
+              time: timestamps[i],
+              open: quote.open[i],
+              high: quote.high[i],
+              low: quote.low[i],
+              close: quote.close[i]
+            });
+          }
+        }
+
+        // 차트에 데이터 주입 및 로딩 메시지 숨기기
+        candleSeries.setData(chartData);
+        document.getElementById('loading').style.display = 'none';
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('loading').innerText = '차트 데이터를 불러오지 못했습니다.';
+      });
+
+    // 화면 크기 변경 시 차트 리사이즈 대응
+    window.addEventListener('resize', () => {
+      chart.resize(chartContainer.clientWidth, chartContainer.clientHeight);
+    });
+  </script>
 </body>
 </html>
