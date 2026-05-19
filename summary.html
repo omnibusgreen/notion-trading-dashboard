@@ -2,40 +2,52 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>Npay 증권 마켓 전광판</title>
+  <title>Npay 증권 마켓 전광판 (스크롤 가능)</title>
   <style>
-    /* 1. 불필요한 스크롤바를 없애고 화면을 고정합니다 */
     html, body {
       margin: 0; padding: 0; width: 100%; height: 100%;
-      background-color: #ffffff; overflow: hidden;
+      background-color: #ffffff;
+      /* 노션 임베드 자체의 바깥 스크롤바는 숨깁니다 */
+      overflow: hidden; 
     }
 
-    /* 2. 네이버 화면을 가두고 원하는 영역만 오려내는 상자(Window) 역할을 합니다 */
-    .crop-container {
+    /* 네이버 페이지를 품고 있는 상자 */
+    .scroll-container {
       width: 100%;
       height: 100%;
+      /* 이 상자 내부에서 상하좌우 스크롤이 자유롭게 작동하도록 허용합니다 */
+      overflow: auto; 
       position: relative;
-      overflow: hidden;
+      -webkit-overflow-scrolling: touch; /* 모바일 기기에서도 부드럽게 스크롤 되도록 */
     }
 
-    /* 3. 상자 안에서 네이버 페이지의 위치를 조절하여 딱 '그 부분'만 보이게 밀어 올립니다 */
     iframe {
-      position: absolute;
-      /* 마스터트레이더용님이 올려주신 이미지 영역 시작점으로 강제 포커싱 */
-      top: -110px;  /* 위쪽 광고와 로고 메뉴를 110픽셀만큼 위로 밀어서 숨김 */
-      left: 0;
       width: 100%;
-      /* 네이버 원본 컨텐츠가 찌그러지지 않도록 충분한 높이 확보 */
-      height: 1100px; 
+      /* 네이버 원본 페이지 내용 전체를 세로로 길게 다 불러옵니다 */
+      height: 1800px; 
       border: none;
+      display: block;
     }
   </style>
 </head>
 <body>
 
-  <div class="crop-container">
-    <iframe src="https://finance.naver.com/marketindex/" scrolling="no"></iframe>
+  <div class="scroll-container" id="scrollBox">
+    <iframe src="https://finance.naver.com/marketindex/?t=1"></iframe>
   </div>
+
+  <script>
+    // 페이지가 로드되면 자동으로 상단 광고(110px)를 지나쳐서 
+    // 마스터트레이더용님이 원하신 '주요/환율' 타이틀 위치로 스크롤을 슥 내려서 고정해 줍니다.
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const scrollBox = document.getElementById('scrollBox');
+        if (scrollBox) {
+          scrollBox.scrollTop = 110; // 첫 로딩 시 자동으로 110픽셀만큼 내려줌
+        }
+      }, 500); // 네이버 페이지가 로드되는 시간을 벌어주기 위한 0.5초 딜레이
+    });
+  </script>
 
 </body>
 </html>
