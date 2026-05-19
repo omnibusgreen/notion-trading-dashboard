@@ -2,90 +2,29 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>KOSPI 5분봉 무적 차트</title>
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <title>KOSPI 실시간 분봉 위젯</title>
   <style>
     html, body {
       margin: 0; padding: 0; width: 100%; height: 100%;
-      background-color: #131722; overflow: hidden;
+      background-color: #1c2030; /* 깔끔한 다크 테마 배경 */
+      overflow: hidden;
     }
-    #chart { width: 100%; height: 100%; }
-    .status-text {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      color: #d1d4dc; font-size: 14px; font-family: sans-serif;
+    .widget-container { width: 100%; height: 100%; }
+    iframe { 
+      width: 100%; 
+      height: 100%; 
+      border: none;
     }
   </style>
 </head>
 <body>
 
-  <div id="status" class="status-text">국장 실시간 분봉 데이터 연결 중...</div>
-  <div id="chart"></div>
+  <div class="widget-container">
+    <iframe 
+      src="https://ch.investing.com/html5-charts/index.php?pair_ids=374&header_title=KOSPI&theme=dark" 
+      scrolling="no">
+    </iframe>
+  </div>
 
-  <script>
-    // 1. 차트 컨테이너 세팅 (트레이딩뷰 감성 고화질 다크모드)
-    const container = document.getElementById('chart');
-    const chart = LightweightCharts.createChart(container, {
-      width: container.clientWidth,
-      height: container.clientHeight,
-      layout: { backgroundColor: '#131722', textColor: '#d1d4dc' },
-      grid: {
-        vertLines: { color: 'rgba(42, 46, 57, 0.3)' },
-        horzLines: { color: 'rgba(42, 46, 57, 0.3)' },
-      },
-      timeScale: { timeVisible: true, secondsVisible: false },
-    });
-
-    // 2. 국장 맞춤 캔들 색상 (양봉: 빨강, 음봉: 파랑)
-    const candleSeries = chart.addCandlestickSeries({
-      upColor: '#ff3b30',
-      downColor: '#007aff',
-      borderDownColor: '#007aff',
-      borderUpColor: '#ff3b30',
-      wickDownColor: '#007aff',
-      wickUpColor: '#ff3b30',
-    });
-
-    // 3. 야후 금융 데이터를 CORS 차단 없이 뚫고 들어가는 프록시 라우팅
-    const ticker = '^KS11'; // KOSPI 심볼
-    const proxy = 'https://cors-anywhere.herokuapp.com/'; // CORS 우회 쉴드
-    const apiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=5m&range=2d`;
-
-    fetch(proxy + apiUrl)
-      .then(res => {
-        if(!res.ok) throw new Error('Proxy 제한 가능성');
-        return res.json();
-      })
-      .then(json => {
-        const result = json.chart.result[0];
-        const timestamps = result.timestamp;
-        const quote = result.indicators.quote[0];
-        const chartData = [];
-        
-        for (let i = 0; i < timestamps.length; i++) {
-          if (quote.open[i] && quote.high[i] && quote.low[i] && quote.close[i]) {
-            chartData.push({
-              time: timestamps[i],
-              open: quote.open[i],
-              high: quote.high[i],
-              low: quote.low[i],
-              close: quote.close[i]
-            });
-          }
-        }
-        
-        candleSeries.setData(chartData);
-        document.getElementById('status').style.display = 'none';
-      })
-      .catch(err => {
-        console.error(err);
-        // 만약 공용 프록시가 일시적으로 무거우면 대안 주소로 즉시 그리기 복구 트리거
-        document.getElementById('status').innerHTML = 
-          `실시간 서버를 불러오는 중입니다.<br><br><a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" style="color:#ff3b30; text-decoration:underline;">[여기]</a>를 클릭해 'Request temporary access' 버튼을 한 번만 눌러주시면 노션에서 평생 잠금 해제됩니다.`;
-      });
-
-    window.addEventListener('resize', () => {
-      chart.resize(container.clientWidth, container.clientHeight);
-    });
-  </script>
 </body>
 </html>
