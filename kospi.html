@@ -2,45 +2,21 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KOSPI Widget</title>
+  <title>Investing KOSPI Widget</title>
   <style>
-    /* 노션 임베드 시 불필요한 스크롤바와 여백 제거 */
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #0f0f0f; /* 대시보드 톤의 어두운 배경색 */
-      overflow: hidden;
-    }
-
-    .widget-container {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      /* 네이버의 흰 배경을 어둡게 반전시키고, 빨간색/파란색 톤을 유지하는 다크 필터 */
-      filter: invert(0.91) hue-rotate(180deg);
-      opacity: 0.9;
-    }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #1c2030; overflow: hidden; }
+    .widget-container { width: 100%; height: 100%; }
   </style>
 </head>
 <body>
-
   <div class="widget-container">
     <iframe 
-      src="https://m.stock.naver.com/chart/domestic/index/KOSPI" 
+      src="https://minkabu.co.kr/widgets/charts/candlestick?t=174&t_m=index&p=D&i=0&i_m=none&col_b=22252a&col_g=1c2030&col_t=ffffff&col_up=ff3b30&col_down=007aff" 
+      width="100%" 
+      height="100%" 
+      frameborder="0" 
       scrolling="no">
     </iframe>
   </div>
-
 </body>
 </html>
