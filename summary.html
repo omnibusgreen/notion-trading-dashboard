@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Npay 증권 마켓 전광판</title>
+  <style>
+    /* 1. 불필요한 스크롤바를 없애고 화면을 고정합니다 */
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background-color: #ffffff; overflow: hidden;
+    }
+
+    /* 2. 네이버 화면을 가두고 원하는 영역만 오려내는 상자(Window) 역할을 합니다 */
+    .crop-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 3. 상자 안에서 네이버 페이지의 위치를 조절하여 딱 '그 부분'만 보이게 밀어 올립니다 */
+    iframe {
+      position: absolute;
+      /* 마스터트레이더용님이 올려주신 이미지 영역 시작점으로 강제 포커싱 */
+      top: -110px;  /* 위쪽 광고와 로고 메뉴를 110픽셀만큼 위로 밀어서 숨김 */
+      left: 0;
+      width: 100%;
+      /* 네이버 원본 컨텐츠가 찌그러지지 않도록 충분한 높이 확보 */
+      height: 1100px; 
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="crop-container">
+    <iframe src="https://finance.naver.com/marketindex/" scrolling="no"></iframe>
+  </div>
+
+</body>
+</html>
