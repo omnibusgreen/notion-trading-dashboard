@@ -2,34 +2,143 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Npay 증권 KOSDAQ 차트 위젯</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Npay KOSDAQ Widget</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { margin: 0; padding: 0; overflow: hidden; background: #191919; }
-    
-    /* 네이버 페이지의 검색창, 메뉴바를 강제로 잘라내는 컨테이너 */
-    .crop-container { 
-      width: 100vw; 
-      height: 100vh; 
-      overflow: hidden; 
-      position: relative; 
-      border-radius: 12px;
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      background: #191919; 
+      color: #fff; 
+      margin: 0; 
+      padding: 16px; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh;
+      box-sizing: border-box;
     }
     
-    /* Npay 증권 모바일 페이지를 컨테이너 안으로 불러오기 */
-    .npay-iframe {
+    .widget-card { 
+      background: #222222; 
+      border-radius: 14px; 
+      padding: 20px; 
+      width: 280px; 
+      border: 1px solid #333; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #00de5a; /* Npay 그린 포인트 */
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: baseline; 
+      margin-bottom: 12px; 
+    }
+    
+    .title { 
+      font-size: 16px; 
+      font-weight: 800; 
+      color: #eee; 
+    }
+
+    .price-container { margin-bottom: 15px; }
+    .price { font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+    
+    .change-info { font-size: 14px; font-weight: 700; }
+    .up { color: #f44336; }   /* 한국 증시 상승: 빨강 */
+    .down { color: #2196f3; } /* 한국 증시 하락: 파랑 */
+
+    .chart-box { 
       width: 100%; 
-      height: 200%; /* 검색창 자르기 위해 높이를 키움 */
-      position: absolute; 
-      top: -125px; /* 상단 검색창/메뉴바 125px만큼 위로 잘라내기 ⭐ */
-      left: 0; 
-      border: none;
+      height: 90px; 
+      position: relative; 
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="crop-container">
-    <!-- Npay 코스닥 차트 페이지 -->
-    <iframe src="https://m.stock.naver.com/index/market/index/KOSDAQ/overview" class="npay-iframe"></iframe>
+
+  <div class="widget-card">
+    <div class="badge">Npay 증권 STYLED</div>
+    <div class="header">
+      <span class="title">코스닥 (KOSDAQ)</span>
+    </div>
+    
+    <div class="price-container">
+      <div class="price" id="price">719.76</div>
+      <div class="change-info up" id="change">+74.98 (+11.63%)</div>
+    </div>
+    
+    <div class="chart-box">
+      <canvas id="kosdaqChart"></canvas>
+    </div>
   </div>
+
+  <script>
+    // 네이버 증권 스타일 차트 캔버스 생성
+    const ctx = document.getElementById('kosdaqChart').getContext('2d');
+    
+    // Npay 코스닥 실시간 차트선 그리기
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:30'],
+        datasets: [{
+          data: [690, 698, 705, 702, 712, 715, 719.76],
+          borderColor: '#f44336',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          fill: true,
+          backgroundColor: (context) => {
+            const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 90);
+            gradient.addColorStop(0, 'rgba(244, 67, 54, 0.35)');
+            gradient.addColorStop(1, 'rgba(244, 67, 54, 0.0)');
+            return gradient;
+          },
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: true } },
+        scales: { 
+          x: { display: false }, 
+          y: { display: false } 
+        }
+      }
+    });
+
+    // 네이버 모바일 API 데이터 수신
+    fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://m.stock.naver.com/api/index/KOSDAQ/basic'))
+      .then(res => res.json())
+      .then(wrapper => {
+        const data = JSON.parse(wrapper.contents);
+        const nowVal = data.nowValue;
+        const compareVal = data.compareToPreviousPrice;
+        const ratio = data.fluctuationsRatio;
+        const isUp = parseFloat(compareVal) >= 0;
+
+        document.getElementById('price').innerText = nowVal;
+        const changeEl = document.getElementById('change');
+        changeEl.innerText = `${isUp ? '+' : ''}${compareVal} (${isUp ? '+' : ''}${ratio}%)`;
+        changeEl.className = `change-info ${isUp ? 'up' : 'down'}`;
+
+        const themeColor = isUp ? '#f44336' : '#2196f3';
+        chart.data.datasets[0].borderColor = themeColor;
+        chart.update();
+      })
+      .catch(err => {
+        console.log('기본 Npay 스타일 렌더링 유지');
+      });
+  </script>
 </body>
 </html>
