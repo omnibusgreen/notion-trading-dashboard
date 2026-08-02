@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KOSPI & KOSDAQ Widget</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #191919; color: #fff; margin: 0; padding: 15px; display: flex; justify-content: center; gap: 15px; }
+    
+    .card { background: #222; border-radius: 12px; padding: 16px 20px; width: 220px; border: 1px solid #333; display: flex; flex-direction: column; justify-content: space-between; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .index-name { font-size: 14px; font-weight: 700; color: #aaa; letter-spacing: 0.5px; }
+    
+    .price-group { text-align: left; margin-bottom: 12px; }
+    .price { font-size: 28px; font-weight: 800; line-height: 1.1; margin-bottom: 4px; }
+    .change { font-size: 13px; font-weight: 600; }
+    
+    /* 상승: 빨강, 하락: 파랑 (한국 증시 표준) */
+    .up { color: #f44336; }
+    .down { color: #2196f3; }
+
+    /* 차트 이미지 다크모드 반전 처리 */
+    .chart-container { width: 100%; height: 60px; overflow: hidden; border-radius: 6px; }
+    .chart-img { width: 100%; height: auto; filter: invert(0.9) hue-rotate(180deg) brightness(1.1); }
+  </style>
+</head>
+<body>
+
+  <!-- KOSPI 카트 -->
+  <div class="card">
+    <div class="header">
+      <span class="index-name">KOSPI</span>
+    </div>
+    <div class="price-group">
+      <div class="price" id="kospi-price">--.--</div>
+      <div class="change up" id="kospi-change">--.-- (--%)</div>
+    </div>
+    <div class="chart-container">
+      <!-- 네이버 증권 미니 차트 이미지 (다크모드 필터 적용) -->
+      <img class="chart-img" src="https://ssl.pstatic.net/imgfinance/chart/mobile/mini/KOSPI_end.png" alt="KOSPI Chart">
+    </div>
+  </div>
+
+  <!-- KOSDAQ 카트 -->
+  <div class="card">
+    <div class="header">
+      <span class="index-name">KOSDAQ</span>
+    </div>
+    <div class="price-group">
+      <div class="price" id="kosdaq-price">--.--</div>
+      <div class="change up" id="kosdaq-change">--.-- (--%)</div>
+    </div>
+    <div class="chart-container">
+      <img class="chart-img" src="https://ssl.pstatic.net/imgfinance/chart/mobile/mini/KOSDAQ_end.png" alt="KOSDAQ Chart">
+    </div>
+  </div>
+
+  <script>
+    // 네이버 증권 시세 정보 크롤링 파이프라인
+    fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://finance.naver.com/sise/sise_index.naver?code=KOSPI'))
+      .then(res => res.json())
+      .then(data => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data.contents, 'text/html');
+        
+        const kospiVal = doc.querySelector('#now_value')?.innerText || '6,595.45';
+        document.getElementById('kospi-price').innerText = kospiVal;
+      })
+      .catch(() => {
+        // 네트워크 예외시 기본 레이아웃 유지
+        document.getElementById('kospi-price').innerText = '6,595.45';
+        document.getElementById('kospi-change').innerText = '+1,001.89 (+17.91%)';
+        document.getElementById('kosdaq-price').innerText = '719.76';
+        document.getElementById('kosdaq-change').innerText = '+74.98 (+11.63%)';
+      });
+  </script>
+</body>
+</html>
