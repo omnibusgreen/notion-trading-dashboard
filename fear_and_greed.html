@@ -15,20 +15,24 @@
   <div class="rating" id="rating">LOADING...</div>
 
   <script>
-    // CORS 차단 없는 CNN Fear and Greed 오픈 API Endpoint
-    fetch('https://api.alternative.me/fng/?metadata=0')
+    // CNN 공식 API 주소
+    const cnnUrl = 'https://production.dataviz.cnn.io/index/fearandgreed/graphdata';
+    // 신뢰도 높은 corsproxy 서비스 사용
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(cnnUrl);
+
+    fetch(proxyUrl)
       .then(res => res.json())
-      .then(resData => {
-        const item = resData.data[0];
-        const score = parseInt(item.value);
-        const rating = item.value_classification;
+      .then(data => {
+        // CNN 공식 실시간 점수 및 상태
+        const score = Math.round(data.fgi.score);
+        const rating = data.fgi.rating;
         
         document.getElementById('score').innerText = score;
         document.getElementById('rating').innerText = rating;
         
         const ratingEl = document.getElementById('rating');
         
-        // CNN 수치 상태별 색상 적용
+        // CNN 공식 색상 매핑
         if (score >= 75) {
           ratingEl.style.color = '#00c853'; // Extreme Greed
         } else if (score >= 55) {
