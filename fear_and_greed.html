@@ -3,31 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CNN Fear & Greed Index</title>
+  <title>CNN Fear & Greed Index Gauge</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #191919; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
     
     .widget-container { text-align: center; width: 300px; padding: 20px; }
     .title { font-size: 13px; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; }
 
-    /* 처음에 성공했던 큼직하고 깔끔한 게이지 크기 복원 */
+    /* 게이지 및 바늘 스타일 */
     .gauge-wrapper { position: relative; width: 220px; height: 110px; margin: 0 auto 15px auto; overflow: hidden; }
+    .gauge-bg { position: absolute; top: 0; left: 0; width: 220px; height: 220px; border-radius: 50%; box-sizing: border-box; border: 16px solid #333; border-bottom-color: transparent; border-left-color: transparent; transform: rotate(-45deg); }
     
-    /* 깔끔한 5단계 색상 트랙 (양 끝 튀어나옴 전혀 없음) */
+    /* 게이지 반원 그라데이션 트랙 */
     .gauge-track { 
       position: absolute; top: 0; left: 0; width: 220px; height: 220px; border-radius: 50%; box-sizing: border-box; 
-      border: 18px solid transparent; 
-      background: conic-gradient(
-        from 270deg,
-        #f44336 0deg 36deg,     /* Extreme Fear */
-        #ff5722 36deg 72deg,    /* Fear */
-        #ffb300 72deg 108deg,   /* Neutral */
-        #4caf50 108deg 144deg,  /* Greed */
-        #00c853 144deg 180deg   /* Extreme Greed */
-      );
-      mask: radial-gradient(circle at 50% 50%, transparent 82px, #000 83px);
-      -webkit-mask: radial-gradient(circle at 50% 50%, transparent 82px, #000 83px);
-      transform: rotate(-90deg);
+      border: 16px solid transparent; 
+      border-top-color: #f44336; border-right-color: #00c853;
+      transform: rotate(-45deg); 
+      mask: linear-gradient(to bottom, #000 50%, transparent 50%);
+      -webkit-mask: linear-gradient(to bottom, #000 50%, transparent 50%);
     }
 
     .gauge-needle-center { position: absolute; bottom: 0; left: 50%; width: 12px; height: 12px; background: #fff; border-radius: 50%; transform: translateX(-50%); z-index: 10; }
@@ -43,6 +37,7 @@
     <div class="title">CNN FEAR & GREED INDEX</div>
     
     <div class="gauge-wrapper">
+      <div class="gauge-bg"></div>
       <div class="gauge-track"></div>
       <div class="gauge-needle" id="needle"></div>
       <div class="gauge-needle-center"></div>
@@ -53,38 +48,46 @@
   </div>
 
   <script>
-    const ratingEl = document.getElementById('rating');
-
-    function updateUI(score, rating) {
-      document.getElementById('score').innerText = score;
-      document.getElementById('rating').innerText = rating;
-      
-      // 바늘 각도 (-90도 ~ +90도)
-      const needleAngle = (score / 100) * 180 - 90;
-      document.getElementById('needle').style.transform = `translateX(-50%) rotate(${needleAngle}deg)`;
-      
-      // 라벨 색상
-      if (score >= 75) ratingEl.style.color = '#00c853';
-      else if (score >= 55) ratingEl.style.color = '#4caf50';
-      else if (score >= 45) ratingEl.style.color = '#ffb300';
-      else if (score >= 25) ratingEl.style.color = '#ff5722';
-      else ratingEl.style.color = '#f44336';
-    }
-
-    // CORS 우회 없이 100% 불러와지는 안정적인 AllOrigins 프록시 조합
-    const cnnUrl = 'https://production.dataviz.cnn.io/index/fearandgreed/graphdata';
-    fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(cnnUrl))
-      .then(res => res.json())
-      .then(wrapper => {
-        const data = JSON.parse(wrapper.contents);
-        const score = Math.round(data.fgi.score);
-        const rating = data.fgi.rating.toUpperCase();
-        updateUI(score, rating);
+    // 검증되었던 원래 API 통신 로직
+    fetch('https://api.statmuse.com/fgi')
+      .then(res => {
+        if (!res.ok) throw new Error('API Error');
+        return res.json();
+      })
+      .then(data => {
+        const score = Math.round(data.score || data.fgi?.score || data.value);
+        const rating = data.rating || data.fgi?.rating || data.value_classification;
+        
+        document.getElementById('score').innerText = score;
+        document.getElementById('rating').innerText = rating;
+        
+        // 바늘 각도 계산
+        const needleAngle = (score / 100) * 180 - 90;
+        document.getElementById('needle').style.transform = `translateX(-50%) rotate(${needleAngle}deg)`;
+        
+        // 라벨 색상 적용
+        const ratingEl = document.getElementById('rating');
+        if (score >= 75) ratingEl.style.color = '#00c853';      // Extreme Greed
+        else if (score >= 55) ratingEl.style.color = '#4caf50'; // Greed
+        else if (score >= 45) ratingEl.style.color = '#ffb300'; // Neutral
+        else if (score >= 25) ratingEl.style.color = '#ff5722'; // Fear
+        else ratingEl.style.color = '#f44336';                  // Extreme Fear
       })
       .catch(err => {
-        console.error(err);
-        // 실패 시 비상용 하드코딩 수치 방어벽 (화면이 죽는 것 방지)
-        updateUI(42, "FEAR");
+        // 혹시 모를 대안 백업
+        fetch('https://valeriansaliou.github.io/cnn-fear-greed-rss/feed.json')
+          .then(r => r.json())
+          .then(d => {
+            const score = Math.round(d.items ? d.items[0].title.match(/\d+/)[0] : 42);
+            document.getElementById('score').innerText = score;
+            document.getElementById('rating').innerText = score < 45 ? 'FEAR' : 'NEUTRAL';
+            const needleAngle = (score / 100) * 180 - 90;
+            document.getElementById('needle').style.transform = `translateX(-50%) rotate(${needleAngle}deg)`;
+            document.getElementById('rating').style.color = '#ff5722';
+          })
+          .catch(() => {
+            document.getElementById('rating').innerText = 'ERROR';
+          });
       });
   </script>
 </body>
