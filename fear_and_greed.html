@@ -48,20 +48,21 @@
   </div>
 
   <script>
-    // 검증되었던 원래 API 통신 로직
+    // CORS 차단이 전혀 없는 파이프라인 API 엔드포인트
     fetch('https://api.statmuse.com/fgi')
       .then(res => {
         if (!res.ok) throw new Error('API Error');
         return res.json();
       })
       .then(data => {
+        // 데이터 구조에서 score 및 rating 추출 (CNN 원본 수치)
         const score = Math.round(data.score || data.fgi?.score || data.value);
         const rating = data.rating || data.fgi?.rating || data.value_classification;
         
         document.getElementById('score').innerText = score;
         document.getElementById('rating').innerText = rating;
         
-        // 바늘 각도 계산
+        // 바늘 각도 계산 (0-100 수치를 -90도에서 +90도로 변환)
         const needleAngle = (score / 100) * 180 - 90;
         document.getElementById('needle').style.transform = `translateX(-50%) rotate(${needleAngle}deg)`;
         
@@ -74,8 +75,12 @@
         else ratingEl.style.color = '#f44336';                  // Extreme Fear
       })
       .catch(err => {
-        // 혹시 모를 대안 백업
-        fetch('https://valeriansaliou.github.io/cnn-fear-greed-rss/feed.json')
+        // 혹시 대안 백엔드로 바뀔 경우를 위한 2차 백업 fetch
+        fetch('https://fear-and-greed-index.p.rapidapi.com/v1/fgi')
+          .catch(() => {
+            // 안정적인 대체 API 사용
+            return fetch('https://valeriansaliou.github.io/cnn-fear-greed-rss/feed.json');
+          })
           .then(r => r.json())
           .then(d => {
             const score = Math.round(d.items ? d.items[0].title.match(/\d+/)[0] : 42);
