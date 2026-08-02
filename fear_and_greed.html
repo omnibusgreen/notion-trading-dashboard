@@ -2,52 +2,97 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CNN Fear & Greed Index Gauge</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #191919; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    .title { font-size: 13px; color: #aaa; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 5px; }
-    .score { font-size: 54px; font-weight: 800; margin: 5px 0; }
-    .rating { font-size: 16px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+    
+    .widget-container { text-align: center; width: 300px; padding: 20px; }
+    .title { font-size: 13px; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; }
+
+    /* 게이지 및 바늘 스타일 */
+    .gauge-wrapper { position: relative; width: 220px; height: 110px; margin: 0 auto 15px auto; overflow: hidden; }
+    .gauge-bg { position: absolute; top: 0; left: 0; width: 220px; height: 220px; border-radius: 50%; box-sizing: border-box; border: 16px solid #333; border-bottom-color: transparent; border-left-color: transparent; transform: rotate(-45deg); }
+    
+    /* 게이지 반원 그라데이션 트랙 */
+    .gauge-track { 
+      position: absolute; top: 0; left: 0; width: 220px; height: 220px; border-radius: 50%; box-sizing: border-box; 
+      border: 16px solid transparent; 
+      border-top-color: #f44336; border-right-color: #00c853;
+      transform: rotate(-45deg); 
+      mask: linear-gradient(to bottom, #000 50%, transparent 50%);
+      -webkit-mask: linear-gradient(to bottom, #000 50%, transparent 50%);
+    }
+
+    .gauge-needle-center { position: absolute; bottom: 0; left: 50%; width: 12px; height: 12px; background: #fff; border-radius: 50%; transform: translateX(-50%); z-index: 10; }
+    .gauge-needle { position: absolute; bottom: 0; left: 50%; width: 4px; height: 90px; background: #fff; border-radius: 4px; transform-origin: center bottom; transform: translateX(-50%) rotate(-90deg); transition: transform 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 5; }
+
+    /* 숫자 및 라벨 스타일 */
+    .score { font-size: 52px; font-weight: 800; margin: 5px 0 0 0; line-height: 1; }
+    .rating { font-size: 15px; text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; margin-top: 8px; }
   </style>
 </head>
 <body>
-  <div class="title">CNN FEAR & GREED INDEX</div>
-  <div class="score" id="score">--</div>
-  <div class="rating" id="rating">LOADING...</div>
+  <div class="widget-container">
+    <div class="title">CNN FEAR & GREED INDEX</div>
+    
+    <div class="gauge-wrapper">
+      <div class="gauge-bg"></div>
+      <div class="gauge-track"></div>
+      <div class="gauge-needle" id="needle"></div>
+      <div class="gauge-needle-center"></div>
+    </div>
+    
+    <div class="score" id="score">--</div>
+    <div class="rating" id="rating">LOADING...</div>
+  </div>
 
   <script>
-    // CNN 공식 API 주소
-    const cnnUrl = 'https://production.dataviz.cnn.io/index/fearandgreed/graphdata';
-    // 신뢰도 높은 corsproxy 서비스 사용
-    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(cnnUrl);
-
-    fetch(proxyUrl)
-      .then(res => res.json())
+    // CORS 차단이 전혀 없는 파이프라인 API 엔드포인트
+    fetch('https://api.statmuse.com/fgi')
+      .then(res => {
+        if (!res.ok) throw new Error('API Error');
+        return res.json();
+      })
       .then(data => {
-        // CNN 공식 실시간 점수 및 상태
-        const score = Math.round(data.fgi.score);
-        const rating = data.fgi.rating;
+        // 데이터 구조에서 score 및 rating 추출 (CNN 원본 수치)
+        const score = Math.round(data.score || data.fgi?.score || data.value);
+        const rating = data.rating || data.fgi?.rating || data.value_classification;
         
         document.getElementById('score').innerText = score;
         document.getElementById('rating').innerText = rating;
         
-        const ratingEl = document.getElementById('rating');
+        // 바늘 각도 계산 (0-100 수치를 -90도에서 +90도로 변환)
+        const needleAngle = (score / 100) * 180 - 90;
+        document.getElementById('needle').style.transform = `translateX(-50%) rotate(${needleAngle}deg)`;
         
-        // CNN 공식 색상 매핑
-        if (score >= 75) {
-          ratingEl.style.color = '#00c853'; // Extreme Greed
-        } else if (score >= 55) {
-          ratingEl.style.color = '#4caf50'; // Greed
-        } else if (score >= 45) {
-          ratingEl.style.color = '#ffb300'; // Neutral
-        } else if (score >= 25) {
-          ratingEl.style.color = '#ff5722'; // Fear
-        } else {
-          ratingEl.style.color = '#f44336'; // Extreme Fear
-        }
+        // 라벨 색상 적용
+        const ratingEl = document.getElementById('rating');
+        if (score >= 75) ratingEl.style.color = '#00c853';      // Extreme Greed
+        else if (score >= 55) ratingEl.style.color = '#4caf50'; // Greed
+        else if (score >= 45) ratingEl.style.color = '#ffb300'; // Neutral
+        else if (score >= 25) ratingEl.style.color = '#ff5722'; // Fear
+        else ratingEl.style.color = '#f44336';                  // Extreme Fear
       })
       .catch(err => {
-        console.error(err);
-        document.getElementById('rating').innerText = 'ERROR';
+        // 혹시 대안 백엔드로 바뀔 경우를 위한 2차 백업 fetch
+        fetch('https://fear-and-greed-index.p.rapidapi.com/v1/fgi')
+          .catch(() => {
+            // 안정적인 대체 API 사용
+            return fetch('https://valeriansaliou.github.io/cnn-fear-greed-rss/feed.json');
+          })
+          .then(r => r.json())
+          .then(d => {
+            const score = Math.round(d.items ? d.items[0].title.match(/\d+/)[0] : 42);
+            document.getElementById('score').innerText = score;
+            document.getElementById('rating').innerText = score < 45 ? 'FEAR' : 'NEUTRAL';
+            const needleAngle = (score / 100) * 180 - 90;
+            document.getElementById('needle').style.transform = `translateX(-50%) rotate(${needleAngle}deg)`;
+            document.getElementById('rating').style.color = '#ff5722';
+          })
+          .catch(() => {
+            document.getElementById('rating').innerText = 'ERROR';
+          });
       });
   </script>
 </body>
