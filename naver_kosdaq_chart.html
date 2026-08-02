@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Npay KOSDAQ Widget</title>
+  <title>Realtime KOSPI & KOSDAQ Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { 
@@ -11,134 +11,175 @@
       background: #191919; 
       color: #fff; 
       margin: 0; 
-      padding: 16px; 
+      padding: 10px; 
       display: flex; 
       justify-content: center; 
       align-items: center; 
-      height: 100vh;
+      gap: 15px; 
+      min-height: 100vh;
       box-sizing: border-box;
     }
     
     .widget-card { 
       background: #222222; 
       border-radius: 14px; 
-      padding: 20px; 
-      width: 280px; 
+      padding: 18px; 
+      width: 250px; 
       border: 1px solid #333; 
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    .badge {
-      font-size: 11px;
-      font-weight: 700;
-      color: #00de5a; /* Npay 그린 포인트 */
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      box-sizing: border-box;
     }
 
     .header { 
       display: flex; 
       justify-content: space-between; 
-      align-items: baseline; 
-      margin-bottom: 12px; 
+      align-items: center; 
+      margin-bottom: 8px; 
     }
     
     .title { 
-      font-size: 16px; 
-      font-weight: 800; 
-      color: #eee; 
+      font-size: 14px; 
+      font-weight: 700; 
+      color: #aaa; 
+      letter-spacing: 0.5px;
     }
 
-    .price-container { margin-bottom: 15px; }
-    .price { font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+    .price-container { margin-bottom: 10px; }
+    .price { font-size: 28px; font-weight: 800; line-height: 1.1; margin-bottom: 4px; }
     
-    .change-info { font-size: 14px; font-weight: 700; }
-    .up { color: #f44336; }   /* 한국 증시 상승: 빨강 */
-    .down { color: #2196f3; } /* 한국 증시 하락: 파랑 */
+    .change-info { font-size: 13px; font-weight: 700; }
+    .up { color: #f44336; }   /* 상승: 빨강 */
+    .down { color: #2196f3; } /* 하락: 파랑 */
 
     .chart-box { 
       width: 100%; 
-      height: 90px; 
+      height: 80px; 
       position: relative; 
-      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
+  <!-- KOSPI 카드 -->
   <div class="widget-card">
-    <div class="badge">Npay 증권 STYLED</div>
     <div class="header">
-      <span class="title">코스닥 (KOSDAQ)</span>
+      <span class="title">KOSPI</span>
     </div>
-    
     <div class="price-container">
-      <div class="price" id="price">719.76</div>
-      <div class="change-info up" id="change">+74.98 (+11.63%)</div>
+      <div class="price" id="kospi-price">--.--</div>
+      <div class="change-info" id="kospi-change">--.--</div>
     </div>
-    
+    <div class="chart-box">
+      <canvas id="kospiChart"></canvas>
+    </div>
+  </div>
+
+  <!-- KOSDAQ 카드 -->
+  <div class="widget-card">
+    <div class="header">
+      <span class="title">KOSDAQ</span>
+    </div>
+    <div class="price-container">
+      <div class="price" id="kosdaq-price">--.--</div>
+      <div class="change-info" id="kosdaq-change">--.--</div>
+    </div>
     <div class="chart-box">
       <canvas id="kosdaqChart"></canvas>
     </div>
   </div>
 
   <script>
-    // 네이버 증권 스타일 차트 캔버스 생성
-    const ctx = document.getElementById('kosdaqChart').getContext('2d');
-    
-    // Npay 코스닥 실시간 차트선 그리기
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:30'],
-        datasets: [{
-          data: [690, 698, 705, 702, 712, 715, 719.76],
-          borderColor: '#f44336',
-          borderWidth: 2.5,
-          pointRadius: 0,
-          fill: true,
-          backgroundColor: (context) => {
-            const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 90);
-            gradient.addColorStop(0, 'rgba(244, 67, 54, 0.35)');
-            gradient.addColorStop(1, 'rgba(244, 67, 54, 0.0)');
-            return gradient;
+    // Chart.js 초기화 공통 함수
+    function createRealtimeChart(canvasId) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            borderColor: '#f44336',
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: true,
+            backgroundColor: (context) => {
+              const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 80);
+              gradient.addColorStop(0, 'rgba(244, 67, 54, 0.3)');
+              gradient.addColorStop(1, 'rgba(244, 67, 54, 0.0)');
+              return gradient;
+            },
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: true } },
+          scales: { 
+            x: { display: false }, 
+            y: { display: false } 
           },
-          tension: 0.2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { enabled: true } },
-        scales: { 
-          x: { display: false }, 
-          y: { display: false } 
+          animation: { duration: 800 }
         }
-      }
-    });
-
-    // 네이버 모바일 API 데이터 수신
-    fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://m.stock.naver.com/api/index/KOSDAQ/basic'))
-      .then(res => res.json())
-      .then(wrapper => {
-        const data = JSON.parse(wrapper.contents);
-        const nowVal = data.nowValue;
-        const compareVal = data.compareToPreviousPrice;
-        const ratio = data.fluctuationsRatio;
-        const isUp = parseFloat(compareVal) >= 0;
-
-        document.getElementById('price').innerText = nowVal;
-        const changeEl = document.getElementById('change');
-        changeEl.innerText = `${isUp ? '+' : ''}${compareVal} (${isUp ? '+' : ''}${ratio}%)`;
-        changeEl.className = `change-info ${isUp ? 'up' : 'down'}`;
-
-        const themeColor = isUp ? '#f44336' : '#2196f3';
-        chart.data.datasets[0].borderColor = themeColor;
-        chart.update();
-      })
-      .catch(err => {
-        console.log('기본 Npay 스타일 렌더링 유지');
       });
+    }
+
+    const kospiChart = createRealtimeChart('kospiChart');
+    const kosdaqChart = createRealtimeChart('kosdaqChart');
+
+    // 네이버 실시간 분봉 수신 및 렌더링 함수
+    function loadMarketData(code, priceId, changeId, chartObj) {
+      const targetUrl = `https://m.stock.naver.com/api/index/${code}/price?pageSize=120&page=1`;
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
+
+      fetch(proxyUrl)
+        .then(res => res.json())
+        .then(wrapper => {
+          const rawList = JSON.parse(wrapper.contents);
+          const sortedData = rawList.reverse(); // 장 시작 -> 마감 정렬
+          
+          const priceList = [];
+          const timeList = [];
+
+          sortedData.forEach(item => {
+            const val = parseFloat(item.closePrice.replace(/,/g, ''));
+            priceList.push(val);
+            timeList.push(item.localTradedAt);
+          });
+
+          const latest = sortedData[sortedData.length - 1];
+          const nowVal = latest.closePrice;
+          const compareVal = latest.compareToPreviousPrice;
+          const ratio = latest.fluctuationsRatio;
+          const isUp = parseFloat(compareVal) >= 0;
+
+          // 지수 수치 및 등락률 갱신
+          document.getElementById(priceId).innerText = nowVal;
+          const changeEl = document.getElementById(changeId);
+          changeEl.innerText = `${isUp ? '+' : ''}${compareVal} (${isUp ? '+' : ''}${ratio}%)`;
+          changeEl.className = `change-info ${isUp ? 'up' : 'down'}`;
+
+          // 실시간 당일 분봉 차트선 갱신
+          const themeColor = isUp ? '#f44336' : '#2196f3';
+          chartObj.data.labels = timeList;
+          chartObj.data.datasets[0].data = priceList;
+          chartObj.data.datasets[0].borderColor = themeColor;
+          chartObj.data.datasets[0].backgroundColor = (context) => {
+            const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 80);
+            gradient.addColorStop(0, isUp ? 'rgba(244, 67, 54, 0.3)' : 'rgba(33, 150, 243, 0.3)');
+            gradient.addColorStop(1, isUp ? 'rgba(244, 67, 54, 0.0)' : 'rgba(33, 150, 243, 0.0)');
+            return gradient;
+          };
+          chartObj.update();
+        })
+        .catch(err => {
+          console.error(`${code} API Fetch Error:`, err);
+        });
+    }
+
+    // KOSPI, KOSDAQ 데이터 로드 실행
+    loadMarketData('KOSPI', 'kospi-price', 'kospi-change', kospiChart);
+    loadMarketData('KOSDAQ', 'kosdaq-price', 'kosdaq-change', kosdaqChart);
   </script>
 </body>
 </html>
