@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Npay 증권 KOSDAQ 차트 위젯</title>
+  <style>
+    body { margin: 0; padding: 0; overflow: hidden; background: #191919; }
+    
+    /* 네이버 페이지의 검색창, 메뉴바를 강제로 잘라내는 컨테이너 */
+    .crop-container { 
+      width: 100vw; 
+      height: 100vh; 
+      overflow: hidden; 
+      position: relative; 
+      border-radius: 12px;
+    }
+    
+    /* Npay 증권 모바일 페이지를 컨테이너 안으로 불러오기 */
+    .npay-iframe {
+      width: 100%; 
+      height: 200%; /* 검색창 자르기 위해 높이를 키움 */
+      position: absolute; 
+      top: -125px; /* 상단 검색창/메뉴바 125px만큼 위로 잘라내기 ⭐ */
+      left: 0; 
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="crop-container">
+    <!-- Npay 코스닥 차트 페이지 -->
+    <iframe src="https://m.stock.naver.com/index/market/index/KOSDAQ/overview" class="npay-iframe"></iframe>
+  </div>
+</body>
+</html>
