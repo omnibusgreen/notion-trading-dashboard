@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #191919; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .score { font-size: 48px; font-weight: bold; margin: 10px 0; }
+    .rating { font-size: 18px; text-transform: uppercase; color: #ff4d4d; letter-spacing: 1px; }
+    .title { font-size: 12px; color: #888; }
+  </style>
+</head>
+<body>
+  <div class="title">CNN FEAR & GREED INDEX</div>
+  <div class="score" id="score">--</div>
+  <div class="rating" id="rating">LOADING...</div>
+
+  <script>
+    fetch('https://production.dataviz.cnn.io/index/fearandgreed/graphdata')
+      .then(res => res.json())
+      .then(data => {
+        const score = Math.round(data.fgi.score);
+        const rating = data.fgi.rating;
+        document.getElementById('score').innerText = score;
+        document.getElementById('rating').innerText = rating;
+        
+        // 색상 가공
+        const ratingEl = document.getElementById('rating');
+        if (score > 60) ratingEl.style.color = '#4caf50'; // Green
+        else if (score < 40) ratingEl.style.color = '#f44336'; // Red
+        else ratingEl.style.color = '#ff9800'; // Orange
+      });
+  </script>
+</body>
+</html>
