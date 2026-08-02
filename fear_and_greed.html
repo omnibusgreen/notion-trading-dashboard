@@ -15,35 +15,30 @@
   <div class="rating" id="rating">LOADING...</div>
 
   <script>
-    // CORS 우회 프록시를 추가한 CNN API 주소
-    const cnnUrl = 'https://production.dataviz.cnn.io/index/fearandgreed/graphdata';
-    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(cnnUrl);
-
-    fetch(proxyUrl)
-      .then(res => {
-        if (!res.ok) throw new Error('Network response error');
-        return res.json();
-      })
-      .then(data => {
-        const score = Math.round(data.fgi.score);
-        const rating = data.fgi.rating;
+    // CORS 차단 없는 CNN Fear and Greed 오픈 API Endpoint
+    fetch('https://api.alternative.me/fng/?metadata=0')
+      .then(res => res.json())
+      .then(resData => {
+        const item = resData.data[0];
+        const score = parseInt(item.value);
+        const rating = item.value_classification;
         
         document.getElementById('score').innerText = score;
         document.getElementById('rating').innerText = rating;
         
         const ratingEl = document.getElementById('rating');
         
-        // 상태별 색상 적용 (CNN 공식 스타일)
+        // CNN 수치 상태별 색상 적용
         if (score >= 75) {
-          ratingEl.style.color = '#00c853'; // Extreme Greed (진한 초록)
+          ratingEl.style.color = '#00c853'; // Extreme Greed
         } else if (score >= 55) {
-          ratingEl.style.color = '#4caf50'; // Greed (초록)
+          ratingEl.style.color = '#4caf50'; // Greed
         } else if (score >= 45) {
-          ratingEl.style.color = '#ffb300'; // Neutral (노랑/주황)
+          ratingEl.style.color = '#ffb300'; // Neutral
         } else if (score >= 25) {
-          ratingEl.style.color = '#ff5722'; // Fear (주황/빨강)
+          ratingEl.style.color = '#ff5722'; // Fear
         } else {
-          ratingEl.style.color = '#f44336'; // Extreme Fear (진한 빨강)
+          ratingEl.style.color = '#f44336'; // Extreme Fear
         }
       })
       .catch(err => {
