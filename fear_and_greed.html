@@ -10,27 +10,12 @@
     .widget-container { text-align: center; width: 300px; padding: 20px; }
     .title { font-size: 13px; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; }
 
-    .gauge-wrapper { position: relative; width: 220px; height: 110px; margin: 0 auto 15px auto; overflow: hidden; }
+    .gauge-wrapper { position: relative; width: 220px; height: 110px; margin: 0 auto 15px auto; }
 
-    /* 5단계 트랙: 반원 180° 기준 1점 = 1.8° */
-    .gauge-track {
-      position: absolute; top: 0; left: 0; width: 220px; height: 220px; border-radius: 50%; box-sizing: border-box;
-      background: conic-gradient(
-        from 270deg,
-        #f44336   0deg  44deg,   /* Extreme Fear (0~24) */
-        #191919  44deg  46deg,
-        #ff5722  46deg  80deg,   /* Fear (25~44) */
-        #191919  80deg  82deg,
-        #ffb300  82deg  98deg,   /* Neutral (45~54) */
-        #191919  98deg 100deg,
-        #4caf50 100deg 134deg,   /* Greed (55~74) */
-        #191919 134deg 136deg,
-        #00c853 136deg 180deg,   /* Extreme Greed (75~100) */
-        transparent 180deg 360deg
-      );
-      mask: radial-gradient(circle at 50% 50%, transparent 93px, #000 94px);
-      -webkit-mask: radial-gradient(circle at 50% 50%, transparent 93px, #000 94px);
-    }
+    /* SVG 트랙: 벡터 안티에일리어싱으로 경계 계단 현상 없음
+       중심 (110,110) / 스트로크 중심 반지름 102 / 두께 16 → 안쪽 94, 바깥 110 */
+    .gauge-svg { position: absolute; top: 0; left: 0; display: block; }
+    .gauge-svg path { fill: none; stroke-width: 16; stroke-linecap: butt; }
 
     .gauge-needle-center { position: absolute; bottom: 0; left: 50%; width: 12px; height: 12px; background: #fff; border-radius: 50%; transform: translateX(-50%); z-index: 10; }
     .gauge-needle { position: absolute; bottom: 0; left: 50%; width: 4px; height: 90px; background: #fff; border-radius: 4px; transform-origin: center bottom; transform: translateX(-50%) rotate(-90deg); transition: transform 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 5; }
@@ -45,7 +30,20 @@
     <div class="title">CNN FEAR &amp; GREED INDEX</div>
 
     <div class="gauge-wrapper">
-      <div class="gauge-track"></div>
+      <svg class="gauge-svg" width="220" height="110" viewBox="0 0 220 110"
+           xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">
+        <!-- Extreme Fear (0~24) -->
+        <path d="M 8 110 A 102 102 0 0 1 36.627 39.145" stroke="#f44336"/>
+        <!-- Fear (25~44) -->
+        <path d="M 39.145 36.627 A 102 102 0 0 1 92.288 9.550" stroke="#ff5722"/>
+        <!-- Neutral (45~54) -->
+        <path d="M 95.804 8.993 A 102 102 0 0 1 124.196 8.993" stroke="#ffb300"/>
+        <!-- Greed (55~74) -->
+        <path d="M 127.712 9.550 A 102 102 0 0 1 180.855 36.627" stroke="#4caf50"/>
+        <!-- Extreme Greed (75~100) -->
+        <path d="M 183.373 39.145 A 102 102 0 0 1 212 110" stroke="#00c853"/>
+      </svg>
+
       <div class="gauge-needle" id="needle"></div>
       <div class="gauge-needle-center"></div>
     </div>
@@ -59,11 +57,10 @@
     const CNN_API = 'https://production.dataviz.cnn.io/index/fearandgreed/graphdata';
 
     // CNN은 CORS 헤더를 주지 않으므로 프록시 경유가 필요.
-    // 하나가 죽으면 다음 것을 순서대로 시도한다.
     const SOURCES = [
       u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
       u => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
-      u => u   // 혹시 직접 호출이 가능한 환경이면 마지막으로 시도
+      u => u
     ];
 
     function renderUI(score, ratingText, timestamp) {
@@ -71,12 +68,10 @@
       document.getElementById('score').innerText = rounded;
       document.getElementById('rating').innerText = ratingText;
 
-      // 바늘 위치 (-90도 ~ +90도)
       const needleAngle = (rounded / 100) * 180 - 90;
       document.getElementById('needle').style.transform =
         `translateX(-50%) rotate(${needleAngle}deg)`;
 
-      // 게이지 구간과 동일한 색상
       let color;
       if (rounded >= 75) color = '#00c853';
       else if (rounded >= 55) color = '#4caf50';
@@ -85,7 +80,6 @@
       else color = '#f44336';
       document.getElementById('rating').style.color = color;
 
-      // 데이터 기준 시각 표시 (값이 안 바뀔 때 원인 파악용)
       if (timestamp) {
         const d = new Date(timestamp);
         document.getElementById('updated').innerText =
@@ -120,17 +114,16 @@
           if (!fg || typeof fg.score !== 'number') throw new Error('unexpected shape');
 
           renderUI(fg.score, labelFor(Math.round(fg.score)), fg.timestamp);
-          return; // 성공하면 종료
+          return;
         } catch (e) {
           console.warn('source failed:', e.message);
         }
       }
-      // 전부 실패한 경우 — 가짜 숫자 대신 실패를 그대로 표시
       showError('데이터를 불러오지 못했습니다');
     }
 
     load();
-    setInterval(load, 15 * 60 * 1000); // 15분마다 갱신
+    setInterval(load, 15 * 60 * 1000);
   </script>
 </body>
 </html>
