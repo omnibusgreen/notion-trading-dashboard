@@ -10,28 +10,22 @@
     .widget-container { text-align: center; width: 300px; padding: 20px; }
     .title { font-size: 13px; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; }
 
-    /* 원래 레이아웃 규격 (220px x 110px) 그대로 유지 */
     .gauge-wrapper { position: relative; width: 220px; height: 110px; margin: 0 auto 15px auto; overflow: hidden; }
 
-    /* 5단계 트랙: 반원 180° 기준 1점 = 1.8°
-       Extreme Fear 0~25점  →   0° ~  44° (+2° 간격)
-       Fear         25~45점 →  46° ~  80°
-       Neutral      45~55점 →  82° ~  98°
-       Greed        55~75점 → 100° ~ 134°
-       Extreme Greed 75~100점→ 136° ~ 180° */
+    /* 5단계 트랙: 반원 180° 기준 1점 = 1.8° */
     .gauge-track {
       position: absolute; top: 0; left: 0; width: 220px; height: 220px; border-radius: 50%; box-sizing: border-box;
       background: conic-gradient(
         from 270deg,
-        #f44336   0deg  44deg,   /* Extreme Fear (0~24) : 진한 빨강 */
+        #f44336   0deg  44deg,   /* Extreme Fear (0~24) */
         #191919  44deg  46deg,
-        #ff5722  46deg  80deg,   /* Fear (25~44) : 주황 */
+        #ff5722  46deg  80deg,   /* Fear (25~44) */
         #191919  80deg  82deg,
-        #ffb300  82deg  98deg,   /* Neutral (45~54) : 노랑 */
+        #ffb300  82deg  98deg,   /* Neutral (45~54) */
         #191919  98deg 100deg,
-        #4caf50 100deg 134deg,   /* Greed (55~74) : 연초록 */
+        #4caf50 100deg 134deg,   /* Greed (55~74) */
         #191919 134deg 136deg,
-        #00c853 136deg 180deg,   /* Extreme Greed (75~100) : 진초록 */
+        #00c853 136deg 180deg,   /* Extreme Greed (75~100) */
         transparent 180deg 360deg
       );
       mask: radial-gradient(circle at 50% 50%, transparent 93px, #000 94px);
@@ -41,14 +35,14 @@
     .gauge-needle-center { position: absolute; bottom: 0; left: 50%; width: 12px; height: 12px; background: #fff; border-radius: 50%; transform: translateX(-50%); z-index: 10; }
     .gauge-needle { position: absolute; bottom: 0; left: 50%; width: 4px; height: 90px; background: #fff; border-radius: 4px; transform-origin: center bottom; transform: translateX(-50%) rotate(-90deg); transition: transform 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 5; }
 
-    /* 숫자 및 라벨 스타일 */
     .score { font-size: 52px; font-weight: 800; margin: 5px 0 0 0; line-height: 1; }
     .rating { font-size: 15px; text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; margin-top: 8px; }
+    .updated { font-size: 11px; color: #666; margin-top: 10px; letter-spacing: 0.3px; }
   </style>
 </head>
 <body>
   <div class="widget-container">
-    <div class="title">CNN FEAR & GREED INDEX</div>
+    <div class="title">CNN FEAR &amp; GREED INDEX</div>
 
     <div class="gauge-wrapper">
       <div class="gauge-track"></div>
@@ -58,49 +52,85 @@
 
     <div class="score" id="score">--</div>
     <div class="rating" id="rating">LOADING...</div>
+    <div class="updated" id="updated"></div>
   </div>
 
   <script>
-    function renderUI(score, ratingText) {
-      document.getElementById('score').innerText = score;
+    const CNN_API = 'https://production.dataviz.cnn.io/index/fearandgreed/graphdata';
+
+    // CNN은 CORS 헤더를 주지 않으므로 프록시 경유가 필요.
+    // 하나가 죽으면 다음 것을 순서대로 시도한다.
+    const SOURCES = [
+      u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+      u => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
+      u => u   // 혹시 직접 호출이 가능한 환경이면 마지막으로 시도
+    ];
+
+    function renderUI(score, ratingText, timestamp) {
+      const rounded = Math.round(score);
+      document.getElementById('score').innerText = rounded;
       document.getElementById('rating').innerText = ratingText;
 
-      // 바늘 위치 계산 (-90도 ~ +90도)
-      const needleAngle = (score / 100) * 180 - 90;
-      document.getElementById('needle').style.transform = `translateX(-50%) rotate(${needleAngle}deg)`;
+      // 바늘 위치 (-90도 ~ +90도)
+      const needleAngle = (rounded / 100) * 180 - 90;
+      document.getElementById('needle').style.transform =
+        `translateX(-50%) rotate(${needleAngle}deg)`;
 
-      // 수치와 100% 매칭되는 색상 (게이지 구간 색과 동일)
+      // 게이지 구간과 동일한 색상
       let color;
-      if (score >= 75) color = '#00c853';      // Extreme Greed
-      else if (score >= 55) color = '#4caf50'; // Greed
-      else if (score >= 45) color = '#ffb300'; // Neutral
-      else if (score >= 25) color = '#ff5722'; // Fear
-      else color = '#f44336';                  // Extreme Fear
-
+      if (rounded >= 75) color = '#00c853';
+      else if (rounded >= 55) color = '#4caf50';
+      else if (rounded >= 45) color = '#ffb300';
+      else if (rounded >= 25) color = '#ff5722';
+      else color = '#f44336';
       document.getElementById('rating').style.color = color;
+
+      // 데이터 기준 시각 표시 (값이 안 바뀔 때 원인 파악용)
+      if (timestamp) {
+        const d = new Date(timestamp);
+        document.getElementById('updated').innerText =
+          `기준 ${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ` +
+          `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      }
     }
 
-    // CORS 우회 없이 100% 안정적으로 수치를 파싱해오는 백엔드 피드
-    fetch('https://valeriansaliou.github.io/cnn-fear-greed-rss/feed.json')
-      .then(res => res.json())
-      .then(d => {
-        const item = d.items ? d.items[0] : null;
-        const match = item ? item.title.match(/\d+/) : null;
-        const score = match ? parseInt(match[0]) : 42;
+    function labelFor(score) {
+      if (score >= 75) return 'EXTREME GREED';
+      if (score >= 55) return 'GREED';
+      if (score >= 45) return 'NEUTRAL';
+      if (score >= 25) return 'FEAR';
+      return 'EXTREME FEAR';
+    }
 
-        let ratingText = "FEAR";
-        if (score >= 75) ratingText = "EXTREME GREED";
-        else if (score >= 55) ratingText = "GREED";
-        else if (score >= 45) ratingText = "NEUTRAL";
-        else if (score >= 25) ratingText = "FEAR";
-        else ratingText = "EXTREME FEAR";
+    function showError(msg) {
+      document.getElementById('score').innerText = '--';
+      document.getElementById('rating').innerText = 'ERROR';
+      document.getElementById('rating').style.color = '#777';
+      document.getElementById('updated').innerText = msg;
+      console.error('Fear & Greed fetch failed:', msg);
+    }
 
-        renderUI(score, ratingText);
-      })
-      .catch(err => {
-        // 혹시 네트워크 오류 발생 시 ERROR 방지 기본값 세팅
-        renderUI(42, "FEAR");
-      });
+    async function load() {
+      for (const build of SOURCES) {
+        try {
+          const res = await fetch(build(CNN_API), { cache: 'no-store' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          const fg = data.fear_and_greed;
+          if (!fg || typeof fg.score !== 'number') throw new Error('unexpected shape');
+
+          renderUI(fg.score, labelFor(Math.round(fg.score)), fg.timestamp);
+          return; // 성공하면 종료
+        } catch (e) {
+          console.warn('source failed:', e.message);
+        }
+      }
+      // 전부 실패한 경우 — 가짜 숫자 대신 실패를 그대로 표시
+      showError('데이터를 불러오지 못했습니다');
+    }
+
+    load();
+    setInterval(load, 15 * 60 * 1000); // 15분마다 갱신
   </script>
 </body>
 </html>
